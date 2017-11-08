@@ -11,16 +11,16 @@
 *.userprefs
 
 # Build results
-[Dd]ebug/
-[Dd]ebugPublic/
-[Rr]elease/
-[Rr]eleases/
-[Xx]64/
-[Xx]86/
-[Bb]uild/
-bld/
-[Bb]in/
-[Oo]bj/
+#[Dd]ebug/
+#[Dd]ebugPublic/
+#[Rr]elease/
+#[Rr]eleases/
+#[Xx]64/
+#[Xx]86/
+#[Bb]uild/
+#bld/
+#[Bb]in/
+#[Oo]bj/
 
 # Visual Studio 2015 cache/options directory
 .vs/
@@ -36,9 +36,9 @@ bld/
 TestResult.xml
 
 # Build Results of an ATL Project
-[Dd]ebugPS/
-[Rr]eleasePS/
-dlldata.c
+#[Dd]ebugPS/
+#[Rr]eleasePS/
+#dlldata.c
 
 # DNX
 project.lock.json
