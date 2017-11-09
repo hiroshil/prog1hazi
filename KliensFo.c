@@ -2,9 +2,10 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
-#include<time.h>
+#include <time.h>
 #include <float.h>
 #include <math.h>
+#include <dirent.h>
 #include "3rdparty/mysql-connector-c-6.1.11-win32\include\mysql.h"
 #include "3rdparty\curl-7.56.0\builds\libcurl-vc-x86-release-dll-ipv6-sspi-winssl\include\curl\curl.h"
 
@@ -468,10 +469,10 @@ void Felugyelet()
 	else
 		printf("Error during Sql query\n");
 
-		//printf("Press enter to exit!\n");
-		//char enter = 0;
-		//scanf_s("%c", &enter);
-		//while (enter != '\r' && enter != '\n') { enter = getchar(); }
+	//printf("Press enter to exit!\n");
+	//char enter = 0;
+	//scanf_s("%c", &enter);
+	//while (enter != '\r' && enter != '\n') { enter = getchar(); }
 }
 
 struct string {
@@ -772,11 +773,51 @@ void Logolas()
 	//SqlInsert(l);
 }
 
+int strend(const char *s, const char *t)
+{
+	size_t ls = strlen(s); // find length of s
+	size_t lt = strlen(t); // find length of t
+	if (ls >= lt)  // check if t can fit in s
+	{
+		// point s to where t should start and compare the strings from there
+		return (0 == memcmp(t, s + (ls - lt), lt));
+	}
+	return 0; // t was longer than s
+}
+
 void OfflineMod()
 {
 	printf("MODE: Offline\n");
+	printf("\nCreating logs from '.\\offline\\*.html' files:\n\n");
+
+	DIR *dir;
+	struct dirent *ent;
+	if ((dir = opendir("offline")) != NULL)
+	{
+		/* print all the files and directories within directory */
+		while ((ent = readdir(dir)) != NULL)
+		{
+			if (strend(ent->d_name, ".html"))
+			{
+				printf("FILE: '%s'\n", ent->d_name);
 
 
+
+			}
+
+			//ent->d_name;
+		}
+		closedir(dir);
+	}
+	else
+	{
+		/* could not open directory */
+		perror("");
+
+		printf("\nFile handling error...\n");
+
+		return EXIT_FAILURE;
+	}
 
 }
 int main()
@@ -819,6 +860,7 @@ int main()
 	}
 	else if (mod == 1)
 	{
+		system("cls");
 		OfflineMod();
 	}
 	free(Eszkozok);
