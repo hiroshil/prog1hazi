@@ -280,7 +280,7 @@ void EszkozKiiro(Eszkoz eszk)
 
 void Felugyelet()
 {
-	printf("MODE: Supervision\n");
+	printf("MODE: Online Supervision\n");
 
 	// Allocation (let's suppose size contains some value discovered at runtime,
 	// e.g. obtained from some external source)
@@ -292,7 +292,9 @@ void Felugyelet()
 	{
 		res = mysql_store_result(conn);
 
-		int num_fields = mysql_num_fields(res);
+		//int num_fields = mysql_num_fields(res);
+		printf("SQl query resulted in %d rows.\n\n", mysql_num_rows(res));
+
 		int x;
 		while ((row = mysql_fetch_row(res)))
 		{
@@ -457,12 +459,19 @@ void Felugyelet()
 
 			}
 		}
+
+		printf("\n              >>>>>>>>>>> SCROLL TO THE TOP TO SEE THE REPORT! <<<<<<<<<<<\n\n\n");
 		//printf("\n");
 
 		//SELECT * FROM licenszek WHERE LicID = ? 
 	}
 	else
-		printf("Error during Sql query");
+		printf("Error during Sql query\n");
+
+		//printf("Press enter to exit!\n");
+		//char enter = 0;
+		//scanf_s("%c", &enter);
+		//while (enter != '\r' && enter != '\n') { enter = getchar(); }
 }
 
 struct string {
@@ -702,7 +711,7 @@ void EgyLogKeszito()
 
 void Logolas()
 {
-	printf("MODE: Logging\n");
+	printf("MODE: Online Logging\n");
 
 
 	curl_global_init(CURL_GLOBAL_ALL);
@@ -763,42 +772,57 @@ void Logolas()
 	//SqlInsert(l);
 }
 
+void OfflineMod()
+{
+	printf("MODE: Offline\n");
 
+
+
+}
 int main()
 {
-	int be = 3;
-	printf("Initialising MySql connection...\n");
-	if (SqlConnectAndInit() == 0)
+	int mod = 0;
+
+	printf("Select mode:\n\n1: Offline - read '.\\offline\\*.html' files to create a local log. Every file is logged with 5min duration. After creating the log, the software shows the calculated supervision data immediately.\n\n2: Online Logging - Get HTTP Request from mosogep.sch.bme.hu/index.php and log into online database until the terminal is closed.\n\n3: Online Supervision - Calculate supervision data from online database.\n\nOther: Exit\n");
+	scanf_s("%d", &mod);
+
+	if (mod == 2 || mod == 3)
 	{
-		printf("Done.\n\n======================\nAvailable modes:\n\n1: Logging\n2: Supervision\nOther: Exit\n\nSelect an option and press ENTER!\n");
-		scanf_s("%d", &be);
-
-		system("cls");
-
-		if (be == 1)
+		printf("Initialising MySql connection...\n");
+		if (SqlConnectAndInit() == 0)
 		{
-			Logolas();
-		}
-		else if (be == 2)
-		{
-			Felugyelet();
+			printf("Done.\n\n======================\n");
+
+			system("cls");
+
+			if (mod == 2)
+			{
+				Logolas();
+			}
+			else if (mod == 3)
+			{
+				Felugyelet();
+			}
 		}
 		else
 		{
-			printf("Quitting...\n");
+			printf("Initialisation failed!\n");
+			//scanf("%c");
+			return 0;
 		}
+
+
+		//printf("\n\n======================\nClosing Sql Connection Handler...\n");
+		//SqlCloseHandle();//NEM szükséges, mert úgyis kilép a program
+		//printf("Done.\n");
+
 	}
-	else
+	else if (mod == 1)
 	{
-		printf("Initialisation failed!\n");
-		//scanf("%c");
-		return 0;
+		OfflineMod();
 	}
-
-
-	printf("\n\n======================\nClosing Sql Connection Handler...\n");
-	SqlCloseHandle();
-	printf("Done.\n");
+	free(Eszkozok);
+	//free(EszkozokBuffer);//Nem szökséges, mert az 'Eszkozok'-kel együtt felszabadul
 
 	return 0;
 }
