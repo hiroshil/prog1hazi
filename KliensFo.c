@@ -8,7 +8,6 @@
 #include <dirent.h>
 #include "3rdparty/mysql-connector-c-6.1.11-win32\include\mysql.h"
 #include "3rdparty\curl-7.56.0\builds\libcurl-vc-x86-release-dll-ipv6-sspi-winssl\include\curl\curl.h"
-
 char IsNaN(float f)
 {
 	return !(f >= -FLT_MAX);
@@ -208,9 +207,9 @@ int EszkozokSzama = 0;
 
 void EszkozTombNoveles(int proba)
 {
-	if (proba > 3)
+	if (proba > 10)
 	{
-		printf("Multiple errors during memory allocation!");
+		printf("Multiple failures during memory allocation!\n");
 		return;
 	}
 
@@ -226,13 +225,14 @@ void EszkozTombNoveles(int proba)
 	++EszkozokSzama;
 	// Make the array bigger
 	EszkozokBuffer = realloc(Eszkozok, EszkozokSzama * sizeof(Eszkoz));
-	if (!EszkozokBuffer) { --EszkozokSzama; EszkozTombNoveles(proba + 1); return; }
+	if (!EszkozokBuffer) { --EszkozokSzama; delay(10); EszkozTombNoveles(proba + 1); return; }
 	Eszkozok = EszkozokBuffer;
 
 	Eszkozok[EszkozokSzama - 1].OsszMukodes = 0;
 	Eszkozok[EszkozokSzama - 1].OsszPihenes = 0;
 	Eszkozok[EszkozokSzama - 1].OsszNincsadat = 0;
 
+	//printf_s("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\n");
 	// Clean up when you're done.
 	//free(EszkozokBuffer);
 }
@@ -279,6 +279,137 @@ void EszkozKiiro(Eszkoz eszk)
 	printf("   -=>Logged time: %ds\n      -->Active duration: %ds\n      -->Inactive duration: %ds\n      -->N/A duration: %ds\n\n", eszk.OsszLogHossz, eszk.OsszMukodes, eszk.OsszPihenes, eszk.OsszNincsadat);
 }
 
+void StatisztikaKeszitesKiiras()
+{
+	qsort(Eszkozok, EszkozokSzama, sizeof(Eszkoz), CompareEszkozEmelet);
+
+
+	float atlagMosogep = 0, atlagSzarito = 0, abszelterMosogep = 0, abszelterSzarito = 0;
+	int MosogepSzam = 0, SzaritoSzam = 0;
+
+	int i;
+	for (i = 0; i < EszkozokSzama; ++i)
+	{
+		Eszkozok[i].MukodesArany = (float)Eszkozok[i].OsszMukodes / (float)(Eszkozok[i].OsszMukodes + Eszkozok[i].OsszPihenes);
+		Eszkozok[i].OsszLogHossz = Eszkozok[i].OsszMukodes + Eszkozok[i].OsszPihenes + Eszkozok[i].OsszNincsadat;
+
+		if (!IsNaN(Eszkozok[i].MukodesArany))
+		{
+			if (Eszkozok[i].Tipus == 1)
+			{
+				++MosogepSzam;
+				atlagMosogep += Eszkozok[i].MukodesArany;
+			}
+			else if (Eszkozok[i].Tipus == 0)
+			{
+				++SzaritoSzam;
+				atlagSzarito += Eszkozok[i].MukodesArany;
+
+			}
+		}
+	}
+
+	if (MosogepSzam > 0)
+		atlagMosogep /= (float)MosogepSzam;
+
+	if (SzaritoSzam > 0)
+		atlagSzarito /= (float)SzaritoSzam;
+
+	for (i = 0; i < EszkozokSzama; ++i)
+	{
+		if (!IsNaN(Eszkozok[i].MukodesArany))
+		{
+			if (Eszkozok[i].Tipus == 1 && MosogepSzam > 0)
+			{
+				abszelterMosogep += fabs(atlagMosogep - Eszkozok[i].MukodesArany);
+			}
+			else if (Eszkozok[i].Tipus == 0 && SzaritoSzam > 0)
+			{
+				abszelterSzarito += fabs(atlagSzarito - Eszkozok[i].MukodesArany);
+
+			}
+		}
+	}
+
+	if (MosogepSzam > 0)
+	{
+
+		abszelterMosogep /= (float)MosogepSzam;
+
+		printf("----------\n");
+		printf("=Washing Machines:\n");
+		printf("==Average Utilisation: %f%%\n", atlagMosogep * 100);
+		printf("==Average Absolute Deviation: %f%%\n", abszelterMosogep * 100);
+		printf("==Floors With Outstanding Values:\n");
+		for (i = 0; i < EszkozokSzama; ++i)
+		{
+			if (!IsNaN(Eszkozok[i].MukodesArany))
+			{
+				if (Eszkozok[i].Tipus == 1)
+				{
+					if (Eszkozok[i].MukodesArany > atlagMosogep + abszelterMosogep)
+					{
+						printf("===>>%d\n", Eszkozok[i].Emelet);
+					}
+				}
+			}
+		}
+		printf("----------\n");
+	}
+
+	if (SzaritoSzam > 0)
+	{
+
+		abszelterSzarito /= (float)SzaritoSzam;
+
+		printf("----------\n");
+		printf("=Dryers:\n");
+		printf("==Average Utilisation: %f%%\n", atlagSzarito * 100);
+		printf("==Average Absolute Deviation: %f%%\n", abszelterSzarito * 100);
+		printf("==Floors With Outstanding Values:\n");
+		for (i = 0; i < EszkozokSzama; ++i)
+		{
+			if (!IsNaN(Eszkozok[i].MukodesArany))
+			{
+				if (Eszkozok[i].Tipus == 0)
+				{
+					if (Eszkozok[i].MukodesArany > atlagSzarito + abszelterSzarito)
+					{
+						printf("===>>%d\n", Eszkozok[i].Emelet);
+					}
+				}
+			}
+		}
+		printf("----------\n");
+	}
+
+
+	printf("\n-------------------------------------------------------\n");
+	printf("=Washing Machines:\n");
+	printf("-------------------------------------------------------\n");
+	{
+		for (i = 0; i < EszkozokSzama; i++)
+		{
+			if (Eszkozok[i].Tipus == 1)
+				EszkozKiiro(Eszkozok[i]);
+
+		}
+
+
+		printf("\n-------------------------------------------------------\n");
+		printf("=Dryers:\n");
+		printf("-------------------------------------------------------\n");
+		for (i = 0; i < EszkozokSzama; i++)
+		{
+			if (Eszkozok[i].Tipus == 0)
+				EszkozKiiro(Eszkozok[i]);
+
+		}
+	}
+
+	printf("\n              >>>>>>>>>>> SCROLL TO THE TOP TO SEE THE REPORT! <<<<<<<<<<<\n\n\n");
+}
+
 void Felugyelet()
 {
 	printf("MODE: Online Supervision\n");
@@ -286,7 +417,7 @@ void Felugyelet()
 	// Allocation (let's suppose size contains some value discovered at runtime,
 	// e.g. obtained from some external source)
 
-	Eszkozok = malloc(EszkozokSzama * sizeof(Eszkoz));
+	Eszkozok = malloc(0 * sizeof(Eszkoz));
 
 
 	if (mysql_query(conn, "SELECT * FROM geplog") == 0)
@@ -335,133 +466,7 @@ void Felugyelet()
 		if (res != NULL)
 			mysql_free_result(res);
 
-		qsort(Eszkozok, EszkozokSzama, sizeof(Eszkoz), CompareEszkozEmelet);
-
-
-		float atlagMosogep = 0, atlagSzarito = 0, abszelterMosogep = 0, abszelterSzarito = 0;
-		int MosogepSzam = 0, SzaritoSzam = 0;
-
-		int i;
-		for (i = 0; i < EszkozokSzama; ++i)
-		{
-			Eszkozok[i].MukodesArany = (float)Eszkozok[i].OsszMukodes / (float)(Eszkozok[i].OsszMukodes + Eszkozok[i].OsszPihenes);
-			Eszkozok[i].OsszLogHossz = Eszkozok[i].OsszMukodes + Eszkozok[i].OsszPihenes + Eszkozok[i].OsszNincsadat;
-
-			if (!IsNaN(Eszkozok[i].MukodesArany))
-			{
-				if (Eszkozok[i].Tipus == 1)
-				{
-					++MosogepSzam;
-					atlagMosogep += Eszkozok[i].MukodesArany;
-				}
-				else if (Eszkozok[i].Tipus == 0)
-				{
-					++SzaritoSzam;
-					atlagSzarito += Eszkozok[i].MukodesArany;
-
-				}
-			}
-		}
-
-		if (MosogepSzam > 0)
-			atlagMosogep /= (float)MosogepSzam;
-
-		if (SzaritoSzam > 0)
-			atlagSzarito /= (float)SzaritoSzam;
-
-		for (i = 0; i < EszkozokSzama; ++i)
-		{
-			if (!IsNaN(Eszkozok[i].MukodesArany))
-			{
-				if (Eszkozok[i].Tipus == 1 && MosogepSzam > 0)
-				{
-					abszelterMosogep += fabs(atlagMosogep - Eszkozok[i].MukodesArany);
-				}
-				else if (Eszkozok[i].Tipus == 0 && SzaritoSzam > 0)
-				{
-					abszelterSzarito += fabs(atlagSzarito - Eszkozok[i].MukodesArany);
-
-				}
-			}
-		}
-
-		if (MosogepSzam > 0)
-		{
-
-			abszelterMosogep /= (float)MosogepSzam;
-
-			printf("----------\n");
-			printf("=Washing Machines:\n");
-			printf("==Average Utilisation: %f%%\n", atlagMosogep * 100);
-			printf("==Average Absolute Deviation: %f%%\n", abszelterMosogep * 100);
-			printf("==Floors With Outstanding Values:\n");
-			for (i = 0; i < EszkozokSzama; ++i)
-			{
-				if (!IsNaN(Eszkozok[i].MukodesArany))
-				{
-					if (Eszkozok[i].Tipus == 1)
-					{
-						if (Eszkozok[i].MukodesArany > atlagMosogep + abszelterMosogep)
-						{
-							printf("==>>%d\n", Eszkozok[i].Emelet);
-						}
-					}
-				}
-			}
-			printf("----------\n");
-		}
-
-		if (SzaritoSzam > 0)
-		{
-
-			abszelterSzarito /= (float)SzaritoSzam;
-
-			printf("----------\n");
-			printf("=Dryers:\n");
-			printf("==Average Utilisation: %f%%\n", atlagSzarito * 100);
-			printf("==Average Absolute Deviation: %f%%\n", abszelterSzarito * 100);
-			printf("==Floors With Outstanding Values:\n");
-			for (i = 0; i < EszkozokSzama; ++i)
-			{
-				if (!IsNaN(Eszkozok[i].MukodesArany))
-				{
-					if (Eszkozok[i].Tipus == 0)
-					{
-						if (Eszkozok[i].MukodesArany > atlagSzarito + abszelterSzarito)
-						{
-							printf("==>>%d\n", Eszkozok[i].Emelet);
-						}
-					}
-				}
-			}
-			printf("----------\n");
-		}
-
-
-		printf("\n-------------------------------------------------------\n");
-		printf("=Washing Machines:\n");
-		printf("-------------------------------------------------------\n");
-		{
-			for (i = 0; i < EszkozokSzama; i++)
-			{
-				if (Eszkozok[i].Tipus == 1)
-					EszkozKiiro(Eszkozok[i]);
-
-			}
-
-
-			printf("\n-------------------------------------------------------\n");
-			printf("=Dryers:\n");
-			printf("-------------------------------------------------------\n");
-			for (i = 0; i < EszkozokSzama; i++)
-			{
-				if (Eszkozok[i].Tipus == 0)
-					EszkozKiiro(Eszkozok[i]);
-
-			}
-		}
-
-		printf("\n              >>>>>>>>>>> SCROLL TO THE TOP TO SEE THE REPORT! <<<<<<<<<<<\n\n\n");
+		StatisztikaKeszitesKiiras();
 		//printf("\n");
 
 		//SELECT * FROM licenszek WHERE LicID = ? 
@@ -535,7 +540,7 @@ char *szambuff3;
 char *szambuff4;
 char *szambuff5;
 char *szambuff6;
-void EnumString(struct string s)
+void EnumString(struct string s, char OnlineMode /*0: Offline, Más: Online*/)
 {
 	int Emelet = -99999;
 	int szamhossz;
@@ -655,20 +660,42 @@ void EnumString(struct string s)
 
 		if (logolj)
 		{
-			l.Emelet = Emelet;
-			l.Hossz = logdelay;
+			if (OnlineMode)
+			{
+				l.Emelet = Emelet;
+				l.Hossz = logdelay;
 
-			delay(30);
+				delay(30);
 
-			printf("Creating row: %d  %d  %d  %d   -> ", l.Tipus, l.Emelet, l.Statusz, l.Hossz);
-			if (SqlInsert(l) == 0)
-				printf("Succeeded.\n");
+				printf("Creating row: %d  %d  %d  %d   -> ", l.Tipus, l.Emelet, l.Statusz, l.Hossz);
+				if (SqlInsert(l) == 0)
+					printf("Succeeded.\n");
+				else
+					printf("Failed.\n");
+			}
 			else
-				printf("Failed.\n");
+			{
+				//printf_s("FSZMTEST\n");
+				x = GetEszkozIndex(Emelet, l.Tipus);
+				if (x == -1)
+				{
+					EszkozTombNoveles(1);
+					x = EszkozokSzama - 1;
+
+					Eszkozok[x].Emelet = Emelet;
+					Eszkozok[x].Tipus = l.Tipus;
+				}
+
+				if (l.Statusz == 0)//Inaktív
+					Eszkozok[x].OsszPihenes += 5 * 60;
+				else if (l.Statusz == 1)//Aktív
+					Eszkozok[x].OsszMukodes += 5 * 60;
+				else //N/
+					Eszkozok[x].OsszNincsadat += 5 * 60;
+			}
 		}
 
 	}
-
 	//free(szambuff);
 }
 
@@ -699,7 +726,7 @@ void EgyLogKeszito()
 	//x.len = 10000;
 	xEgyLog.len = utf8_to_latin9(xEgyLog.ptr, sEgyLog.ptr, sEgyLog.len);
 	printf("EgyLogKeszito() 2\n");
-	EnumString(xEgyLog);
+	EnumString(xEgyLog, 1);
 
 	//printf("%s\n", xEgyLog.ptr);
 	//free(sEgyLog.ptr);
@@ -785,10 +812,31 @@ int strend(const char *s, const char *t)
 	return 0; // t was longer than s
 }
 
+int GetHossz(char *p, int h)
+{
+	int i = 0;
+	for (; i < h; ++i)
+	{
+		if (p[i] == 0)
+			return i;
+	}
+
+	return -1;
+}
+
 void OfflineMod()
 {
-	printf("MODE: Offline\n");
+	FILE *f;
+	long fsize, fsizeelozo = 0;
+	char *fajltart = malloc(10);
+	char *olvasandofile = malloc(10);
+
+	printf("MODE: Offline Analytics\n");
 	printf("\nCreating logs from '.\\offline\\*.html' files:\n\n");
+
+	Eszkozok = malloc(0 * sizeof(Eszkoz));
+	//init_string(&sEgyLog);
+	init_string(&xEgyLog);
 
 	DIR *dir;
 	struct dirent *ent;
@@ -800,14 +848,49 @@ void OfflineMod()
 			if (strend(ent->d_name, ".html"))
 			{
 				printf("FILE: '%s'\n", ent->d_name);
+				
+				olvasandofile = realloc(olvasandofile, 9 + ent->d_namlen);
+				strcpy(olvasandofile, "offline\\");
+				strcat(olvasandofile, ent->d_name);
+
+				f = fopen(olvasandofile, "rb");
+				fseek(f, 0, SEEK_END);
+				fsize = ftell(f) + 1;//A fájl kódolásától függõen lehet, hogy egy karaktert két byte reprezentál
+				fseek(f, 0, SEEK_SET);  //same as rewind(f);
+
+				if(fsize > fsizeelozo)
+					fajltart = realloc(fajltart, fsize + 1);
+				fsizeelozo = fsize;
+
+				delay(10);
+
+				fread(fajltart, fsize, 1, f);
+				fclose(f);
+
+				//sEgyLog.len = GetHossz(sEgyLog.ptr, sEgyLog.len);
+
+				fajltart[fsize - 1] = 0;
+
+				xEgyLog.len = utf8_to_latin9(xEgyLog.ptr, fajltart, fsize);
 
 
+				EnumString(xEgyLog, 0);
 
+				//sEgyLog.len = 0;//Különben a következõ WebRequest ehhez (az elõzõhöz) írná hozzá az eredményt
+				//free(sEgyLog.ptr);
+				//init_string(&sEgyLog);
 			}
 
 			//ent->d_name;
 		}
 		closedir(dir);
+		free(olvasandofile);
+		free(fajltart);
+		
+		//printf("XXXXXXX\n");
+		StatisztikaKeszitesKiiras();
+		//printf("YYYYY\n");
+
 	}
 	else
 	{
@@ -824,7 +907,7 @@ int main()
 {
 	int mod = 0;
 
-	printf("Select mode:\n\n1: Offline - read '.\\offline\\*.html' files to create a local log. Every file is logged with 5min duration. After creating the log, the software shows the calculated supervision data immediately.\n\n2: Online Logging - Get HTTP Request from mosogep.sch.bme.hu/index.php and log into online database until the terminal is closed.\n\n3: Online Supervision - Calculate supervision data from online database.\n\nOther: Exit\n");
+	printf("Select mode:\n\n1: Offline Analytics - read '.\\offline\\*.html' files to create a local log. Every file is logged as 5min duration. After creating the log, the software shows the calculated supervision data immediately.\n\n2: Online Logging - Get HTTP Request from mosogep.sch.bme.hu/index.php and log into online database until the terminal is closed.\n\n3: Online Supervision - Calculate supervision data from online database.\n\nOther: Exit\n");
 	scanf_s("%d", &mod);
 
 	if (mod == 2 || mod == 3)
