@@ -1,3 +1,8 @@
+/*
+!!!!MINDIG x86-ra buildelj! A MySQl connector nem mûködik 64 biten.!!!!
+*/
+
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -5,7 +10,7 @@
 #include <time.h>
 #include <float.h>
 #include <math.h>
-#include <dirent.h>
+#include "3rdparty\dirent.h"
 #include "3rdparty/mysql-connector-c-6.1.11-win32\include\mysql.h"
 #include "3rdparty\curl-7.56.0\builds\libcurl-vc-x86-release-dll-ipv6-sspi-winssl\include\curl\curl.h"
 char IsNaN(float f)
@@ -223,14 +228,24 @@ void EszkozTombNoveles(int proba)
 	}*/
 
 	++EszkozokSzama;
+
+	//if (EszkozokSzama == 1) return;
 	// Make the array bigger
 	EszkozokBuffer = realloc(Eszkozok, EszkozokSzama * sizeof(Eszkoz));
 	if (!EszkozokBuffer) { --EszkozokSzama; delay(10); EszkozTombNoveles(proba + 1); return; }
+
 	Eszkozok = EszkozokBuffer;
 
+
+
+	//init new element
 	Eszkozok[EszkozokSzama - 1].OsszMukodes = 0;
 	Eszkozok[EszkozokSzama - 1].OsszPihenes = 0;
 	Eszkozok[EszkozokSzama - 1].OsszNincsadat = 0;
+	Eszkozok[EszkozokSzama - 1].OsszLogHossz = 0;
+	Eszkozok[EszkozokSzama - 1].Emelet = 0;
+	Eszkozok[EszkozokSzama - 1].Tipus = 0;
+	Eszkozok[EszkozokSzama - 1].MukodesArany = 0;
 
 	//printf_s("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\n");
 	// Clean up when you're done.
@@ -540,6 +555,7 @@ char *szambuff3;
 char *szambuff4;
 char *szambuff5;
 char *szambuff6;
+
 void EnumString(struct string s, char OnlineMode /*0: Offline, Más: Online*/)
 {
 	int Emelet = -99999;
@@ -548,7 +564,7 @@ void EnumString(struct string s, char OnlineMode /*0: Offline, Más: Online*/)
 	logsor l;
 	int i = 0;
 	int x;
-	printf("EnumString() 0-->s.len = %d\n", s.len);
+	printf("  EnumString() 0-->s.len = %d\n", s.len);
 	for (; i < s.len; ++i)
 	{
 		if (StartsWith(s, i, " id=\"f", 6))//Új emelet indexe
@@ -667,7 +683,7 @@ void EnumString(struct string s, char OnlineMode /*0: Offline, Más: Online*/)
 
 				delay(30);
 
-				printf("Creating row: %d  %d  %d  %d   -> ", l.Tipus, l.Emelet, l.Statusz, l.Hossz);
+				printf("Creating row: Type: %d  Floor: %d  Status: %d  Duration: %ds   -> ", l.Tipus, l.Emelet, l.Statusz, l.Hossz);
 				if (SqlInsert(l) == 0)
 					printf("Succeeded.\n");
 				else
@@ -690,8 +706,11 @@ void EnumString(struct string s, char OnlineMode /*0: Offline, Más: Online*/)
 					Eszkozok[x].OsszPihenes += 5 * 60;
 				else if (l.Statusz == 1)//Aktív
 					Eszkozok[x].OsszMukodes += 5 * 60;
-				else //N/
+				else //N/A
 					Eszkozok[x].OsszNincsadat += 5 * 60;
+
+
+				printf_s("  ==>Gathered data: Type: %d  Floor: %d  Status: %d\n", l.Tipus, Emelet, l.Statusz);
 			}
 		}
 
@@ -704,6 +723,7 @@ struct string sEgyLog;
 struct string xEgyLog;
 void EgyLogKeszito()
 {
+	int dekodolthossz;
 	printf("Creating new log...\n============================\n");
 
 
@@ -724,7 +744,15 @@ void EgyLogKeszito()
 	}*/
 
 	//x.len = 10000;
+	xEgyLog.ptr = realloc(xEgyLog.ptr, sEgyLog.len * sizeof(char));//Ez biztosan nagyobb, vagy akkora, mint a dekódolás utáni karakterlánc
+
 	xEgyLog.len = utf8_to_latin9(xEgyLog.ptr, sEgyLog.ptr, sEgyLog.len);
+
+
+	//writefunc("ABCDEFABCDEF", dekodolthossz, 1, &xEgyLog);
+
+	//printf("INSTRING: %s", sEgyLog.ptr);
+
 	printf("EgyLogKeszito() 2\n");
 	EnumString(xEgyLog, 1);
 
@@ -770,16 +798,17 @@ void Logolas()
 
 	curl_easy_setopt(curl, CURLOPT_URL, "http://mosogep.sch.bme.hu/index.php");
 	curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, writefunc);
-	curl_easy_setopt(curl, CURLOPT_WRITEDATA, &sEgyLog);
 	curl_easy_setopt(curl, CURLOPT_ENCODING, "UTF-8");
 
 	while (1)
 	{
 		//init_string(&sEgyLog);
 		//init_string(&xEgyLog);
+
+		curl_easy_setopt(curl, CURLOPT_WRITEDATA, &sEgyLog);
 		EgyLogKeszito();
 		printf("Delaying %ds ... ", logdelay);
-		sEgyLog.len = 0;//Különben a következõ WebRequest ehhez (az elõzõhöz) írná hozzá az eredményt
+		//sEgyLog.len = 0;//Különben a következõ WebRequest ehhez (az elõzõhöz) írná hozzá az eredményt
 		free(sEgyLog.ptr);
 		//xEgyLog.len = 0;
 		//free(xEgyLog.ptr);
@@ -827,7 +856,9 @@ int GetHossz(char *p, int h)
 void OfflineMod()
 {
 	FILE *f;
-	long fsize, fsizeelozo = 0;
+	DIR *dir;
+	struct dirent *ent;
+	long fsize, fsizeelozo = 10;
 	char *fajltart = malloc(10);
 	char *olvasandofile = malloc(10);
 
@@ -838,8 +869,6 @@ void OfflineMod()
 	//init_string(&sEgyLog);
 	init_string(&xEgyLog);
 
-	DIR *dir;
-	struct dirent *ent;
 	if ((dir = opendir("offline")) != NULL)
 	{
 		/* print all the files and directories within directory */
@@ -850,16 +879,19 @@ void OfflineMod()
 				printf("FILE: '%s'\n", ent->d_name);
 				
 				olvasandofile = realloc(olvasandofile, 9 + ent->d_namlen);
-				strcpy(olvasandofile, "offline\\");
-				strcat(olvasandofile, ent->d_name);
+				strcpy_s(olvasandofile, 9, "offline\\");
+				strcat_s(olvasandofile, 9 + ent->d_namlen, ent->d_name);
 
-				f = fopen(olvasandofile, "rb");
+				fopen_s(&f,olvasandofile, "rb");
 				fseek(f, 0, SEEK_END);
-				fsize = ftell(f) + 1;//A fájl kódolásától függõen lehet, hogy egy karaktert két byte reprezentál
+				fsize = ftell(f) + 1;
 				fseek(f, 0, SEEK_SET);  //same as rewind(f);
 
-				if(fsize > fsizeelozo)
+				if (fsize > fsizeelozo)
+				{
 					fajltart = realloc(fajltart, fsize + 1);
+					xEgyLog.ptr = realloc(xEgyLog.ptr, fsize * sizeof(char));//Ez biztosan nagyobb, vagy akkora, mint a dekódolás utáni karakterlánc
+				}
 				fsizeelozo = fsize;
 
 				delay(10);
@@ -872,9 +904,10 @@ void OfflineMod()
 				fajltart[fsize - 1] = 0;
 
 				xEgyLog.len = utf8_to_latin9(xEgyLog.ptr, fajltart, fsize);
-
-
 				EnumString(xEgyLog, 0);
+				printf("\n");
+
+				fsize = fsize;//DEBUG
 
 				//sEgyLog.len = 0;//Különben a következõ WebRequest ehhez (az elõzõhöz) írná hozzá az eredményt
 				//free(sEgyLog.ptr);
@@ -895,9 +928,9 @@ void OfflineMod()
 	else
 	{
 		/* could not open directory */
-		perror("");
+		//perror("");
 
-		printf("\nFile handling error...\n");
+		printf("\nFile handling error... Directory cannot be opened!\n");
 
 		return EXIT_FAILURE;
 	}
