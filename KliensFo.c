@@ -189,15 +189,15 @@ int SqlCloseHandle()
 char querySqlInsert[800];
 int SqlInsert(logsor sor)
 {
-	printf("\nSqlInsert() 0\n");
+	//printf("\nSqlInsert() 0\n");
 	snprintf(querySqlInsert, sizeof(querySqlInsert), "INSERT INTO geplog (Tipus, Emelet, Statusz, Hossz) VALUES ('%d', '%d', '%d', '%d')", sor.Tipus, sor.Emelet, sor.Statusz, sor.Hossz);
-	printf("SqlInsert() 1\n");
+	//printf("SqlInsert() 1\n");
 	if (mysql_query(conn, querySqlInsert) != 0)
 	{
 		fprintf(stderr, "Query Failure\n");
 		return EXIT_FAILURE;
 	}
-	printf("SqlInsert() 2\n");
+	//printf("SqlInsert() 2\n");
 	return 0;
 }
 
@@ -440,7 +440,7 @@ void Felugyelet()
 		res = mysql_store_result(conn);
 
 		//int num_fields = mysql_num_fields(res);
-		printf("SQl query resulted in %d rows.\n\n", mysql_num_rows(res));
+		printf("\nSQl query resulted in %d rows.\n\n", mysql_num_rows(res));
 
 		int x;
 		while ((row = mysql_fetch_row(res)))
@@ -548,7 +548,7 @@ char StartsWith(struct string s, int startindex, char *teszt, int hossz)
 	return 1;
 }
 
-unsigned int logdelay = 5;//s
+unsigned int logdelay = 5*60;//s
 char *szambuff1;//Mert az eltérõ emeletszám hosszok miatti sokszori memória allokálással bizonytalanul futott
 char *szambuff2;
 char *szambuff3;
@@ -564,7 +564,7 @@ void EnumString(struct string s, char OnlineMode /*0: Offline, Más: Online*/)
 	logsor l;
 	int i = 0;
 	int x;
-	printf("  EnumString() 0-->s.len = %d\n", s.len);
+	printf("  EnumString() --> s.len = %d\n", s.len);
 	for (; i < s.len; ++i)
 	{
 		if (StartsWith(s, i, " id=\"f", 6))//Új emelet indexe
@@ -624,6 +624,12 @@ void EnumString(struct string s, char OnlineMode /*0: Offline, Más: Online*/)
 				break;
 			}
 			}
+
+			if (Emelet > 18)
+			{
+				printf("                      >>>>>>>>>>>> DEBUG: Emelet: %d i: %d <<<<<<<<<<<<", Emelet, i);
+			}
+
 			//printf("{-{%s}-}", szambuff);
 			//printf("{-{%d}-}", atoi(&szambuff));
 			//printf("{{{%d}}}", atoi(&szambuff));
@@ -683,7 +689,7 @@ void EnumString(struct string s, char OnlineMode /*0: Offline, Más: Online*/)
 
 				delay(30);
 
-				printf("Creating row: Type: %d  Floor: %d  Status: %d  Duration: %ds   -> ", l.Tipus, l.Emelet, l.Statusz, l.Hossz);
+				printf("  ==>Creating row: Type: %d  Floor: %d  Status: %d  Duration: %ds   -> ", l.Tipus, l.Emelet, l.Statusz, l.Hossz);
 				if (SqlInsert(l) == 0)
 					printf("Succeeded.\n");
 				else
@@ -728,7 +734,7 @@ void EgyLogKeszito()
 
 
 	printf("cURL return code: %d\n", curl_easy_perform(curl));
-	printf("EgyLogKeszito() 1\n");
+	//printf("EgyLogKeszito() 1\n");
 
 	/*if (sEgyLog.len == 0)
 	{
@@ -753,7 +759,7 @@ void EgyLogKeszito()
 
 	//printf("INSTRING: %s", sEgyLog.ptr);
 
-	printf("EgyLogKeszito() 2\n");
+	//printf("EgyLogKeszito() 2\n");
 	EnumString(xEgyLog, 1);
 
 	//printf("%s\n", xEgyLog.ptr);
@@ -940,10 +946,15 @@ int main()
 {
 	int mod = 0;
 
-	printf("Select mode:\n\n1: Offline Analytics - read '.\\offline\\*.html' files to create a local log. Every file is logged as 5min duration. After creating the log, the software shows the calculated supervision data immediately.\n\n2: Online Logging - Get HTTP Request from mosogep.sch.bme.hu/index.php and log into online database until the terminal is closed.\n\n3: Online Supervision - Calculate supervision data from online database.\n\nOther: Exit\n");
+	printf("Select mode:\n\n"); 
+	printf("1: Online Logging - Get HTTP Request from mosogep.sch.bme.hu/index.php and log into online database until the terminal is closed.\n\n");
+	printf("2: Online Supervision - Calculate supervision data from online database.\n\n");
+	printf("3: Offline Analytics - read '.\\offline\\*.html' files to create a local log. Every file is logged as 5min duration. After creating the log, the software shows the calculated supervision data immediately.\n\n");
+	printf("Other: Exit\n");
+	
 	scanf_s("%d", &mod);
 
-	if (mod == 2 || mod == 3)
+	if (mod == 1 || mod == 2)
 	{
 		printf("Initialising MySql connection...\n");
 		if (SqlConnectAndInit() == 0)
@@ -952,11 +963,11 @@ int main()
 
 			system("cls");
 
-			if (mod == 2)
+			if (mod == 1)
 			{
 				Logolas();
 			}
-			else if (mod == 3)
+			else if (mod == 2)
 			{
 				Felugyelet();
 			}
@@ -974,7 +985,7 @@ int main()
 		//printf("Done.\n");
 
 	}
-	else if (mod == 1)
+	else if (mod == 3)
 	{
 		system("cls");
 		OfflineMod();
