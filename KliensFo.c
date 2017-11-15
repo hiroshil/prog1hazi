@@ -11,7 +11,7 @@
 #include <float.h>
 #include <math.h>
 #include "3rdparty\dirent.h"
-#include "3rdparty/mysql-connector-c-6.1.11-win32\include\mysql.h"
+#include "3rdparty\mysql-connector-c-6.1.11-win32\include\mysql.h"
 #include "3rdparty\curl-7.56.0\builds\libcurl-vc-x86-release-dll-ipv6-sspi-winssl\include\curl\curl.h"
 char IsNaN(float f)
 {
@@ -23,7 +23,7 @@ void delay(unsigned int mseconds)
 	clock_t goal = mseconds + clock();
 	while (goal > clock());
 }
-static inline unsigned int to_latin9(const unsigned int code)
+static unsigned int to_latin9(const unsigned int code)
 {
 	/* Code points 0 to U+00FF are the same in both. */
 	if (code < 256U)
@@ -190,7 +190,7 @@ char querySqlInsert[800];
 int SqlInsert(logsor sor)
 {
 	//printf("\nSqlInsert() 0\n");
-	snprintf(querySqlInsert, sizeof(querySqlInsert), "INSERT INTO geplog (Tipus, Emelet, Statusz, Hossz) VALUES ('%d', '%d', '%d', '%d')", sor.Tipus, sor.Emelet, sor.Statusz, sor.Hossz);
+	sprintf(querySqlInsert, "INSERT INTO geplog (Tipus, Emelet, Statusz, Hossz) VALUES ('%d', '%d', '%d', '%d')", sor.Tipus, sor.Emelet, sor.Statusz, sor.Hossz);
 	//printf("SqlInsert() 1\n");
 	if (mysql_query(conn, querySqlInsert) != 0)
 	{
@@ -231,7 +231,7 @@ void EszkozTombNoveles(int proba)
 
 	//if (EszkozokSzama == 1) return;
 	// Make the array bigger
-	EszkozokBuffer = realloc(Eszkozok, EszkozokSzama * sizeof(Eszkoz));
+	EszkozokBuffer = (Eszkoz*)realloc(Eszkozok, EszkozokSzama * sizeof(Eszkoz));
 	if (!EszkozokBuffer) { --EszkozokSzama; delay(10); EszkozTombNoveles(proba + 1); return; }
 
 	Eszkozok = EszkozokBuffer;
@@ -296,13 +296,13 @@ void EszkozKiiro(Eszkoz eszk)
 
 void StatisztikaKeszitesKiiras()
 {
-	qsort(Eszkozok, EszkozokSzama, sizeof(Eszkoz), CompareEszkozEmelet);
-
-
 	float atlagMosogep = 0, atlagSzarito = 0, abszelterMosogep = 0, abszelterSzarito = 0;
 	int MosogepSzam = 0, SzaritoSzam = 0;
-
+	
 	int i;
+
+	qsort(Eszkozok, EszkozokSzama, sizeof(Eszkoz), CompareEszkozEmelet);
+
 	for (i = 0; i < EszkozokSzama; ++i)
 	{
 		Eszkozok[i].MukodesArany = (float)Eszkozok[i].OsszMukodes / (float)(Eszkozok[i].OsszMukodes + Eszkozok[i].OsszPihenes);
@@ -432,17 +432,18 @@ void Felugyelet()
 	// Allocation (let's suppose size contains some value discovered at runtime,
 	// e.g. obtained from some external source)
 
-	Eszkozok = malloc(0 * sizeof(Eszkoz));
+	Eszkozok = (Eszkoz*)malloc(0 * sizeof(Eszkoz));
 
 
 	if (mysql_query(conn, "SELECT * FROM geplog") == 0)
 	{
+		int x;
+
 		res = mysql_store_result(conn);
 
 		//int num_fields = mysql_num_fields(res);
 		printf("\nSQl query resulted in %d rows.\n\n", mysql_num_rows(res));
 
-		int x;
 		while ((row = mysql_fetch_row(res)))
 		{
 			x = GetEszkozIndex(atoi(row[2]), atoi(row[1]));
@@ -502,7 +503,7 @@ struct string {
 
 void init_string(struct string *s) {
 	s->len = 0;
-	s->ptr = malloc(s->len + 1);
+	s->ptr = (char*)malloc(s->len + 1);
 	if (s->ptr == NULL) {
 		fprintf(stderr, "malloc() failed\n");
 		exit(EXIT_FAILURE);
@@ -513,7 +514,7 @@ void init_string(struct string *s) {
 size_t writefunc(void *ptr, size_t size, size_t nmemb, struct string *s)
 {
 	size_t new_len = s->len + size*nmemb;
-	s->ptr = realloc(s->ptr, new_len + 1);
+	s->ptr = (char*)realloc(s->ptr, new_len + 1);
 	if (s->ptr == NULL) {
 		fprintf(stderr, "realloc() failed\n");
 		exit(EXIT_FAILURE);
@@ -589,38 +590,38 @@ void EnumString(struct string s, char OnlineMode /*0: Offline, Más: Online*/)
 			{
 			case 1:
 			{
-				GetSubString(s.ptr, i - szamhossz, szamhossz, &szambuff1);
-				Emelet = atoi(&szambuff1);
+				GetSubString(s.ptr, i - szamhossz, szamhossz, szambuff1);
+				Emelet = atoi(szambuff1);
 				break;
 			}
 			case 2:
 			{
-				GetSubString(s.ptr, i - szamhossz, szamhossz, &szambuff2);
-				Emelet = atoi(&szambuff2);
+				GetSubString(s.ptr, i - szamhossz, szamhossz, szambuff2);
+				Emelet = atoi(szambuff2);
 				break;
 			}
 			case 3:
 			{
-				GetSubString(s.ptr, i - szamhossz, szamhossz, &szambuff3);
-				Emelet = atoi(&szambuff3);
+				GetSubString(s.ptr, i - szamhossz, szamhossz, szambuff3);
+				Emelet = atoi(szambuff3);
 				break;
 			}
 			case 4:
 			{
-				GetSubString(s.ptr, i - szamhossz, szamhossz, &szambuff4);
-				Emelet = atoi(&szambuff4);
+				GetSubString(s.ptr, i - szamhossz, szamhossz, szambuff4);
+				Emelet = atoi(szambuff4);
 				break;
 			}
 			case 5:
 			{
-				GetSubString(s.ptr, i - szamhossz, szamhossz, &szambuff5);
-				Emelet = atoi(&szambuff5);
+				GetSubString(s.ptr, i - szamhossz, szamhossz, szambuff5);
+				Emelet = atoi(szambuff5);
 				break;
 			}
 			case 6:
 			{
-				GetSubString(s.ptr, i - szamhossz, szamhossz, &szambuff6);
-				Emelet = atoi(&szambuff6);
+				GetSubString(s.ptr, i - szamhossz, szamhossz, szambuff6);
+				Emelet = atoi(szambuff6);
 				break;
 			}
 			}
@@ -750,7 +751,7 @@ void EgyLogKeszito()
 	}*/
 
 	//x.len = 10000;
-	xEgyLog.ptr = realloc(xEgyLog.ptr, sEgyLog.len * sizeof(char));//Ez biztosan nagyobb, vagy akkora, mint a dekódolás utáni karakterlánc
+	xEgyLog.ptr = (char*)realloc(xEgyLog.ptr, sEgyLog.len * sizeof(char));//Ez biztosan nagyobb, vagy akkora, mint a dekódolás utáni karakterlánc
 
 	xEgyLog.len = utf8_to_latin9(xEgyLog.ptr, sEgyLog.ptr, sEgyLog.len);
 
@@ -773,12 +774,13 @@ void EgyLogKeszito()
 
 void Logolas()
 {
+	int i = 0;
+
 	printf("MODE: Online Logging\n");
 
 
 	curl_global_init(CURL_GLOBAL_ALL);
 
-	int i = 0;
 	for (; i < 5; i++)
 	{
 		curl = curl_easy_init();
@@ -865,13 +867,13 @@ void OfflineMod()
 	DIR *dir;
 	struct dirent *ent;
 	long fsize, fsizeelozo = 10;
-	char *fajltart = malloc(10);
-	char *olvasandofile = malloc(10);
+	char *fajltart = (char*)malloc(10);
+	char *olvasandofile = (char*)malloc(10);
 
 	printf("MODE: Offline Analytics\n");
 	printf("\nCreating logs from '.\\offline\\*.html' files:\n\n");
 
-	Eszkozok = malloc(0 * sizeof(Eszkoz));
+	Eszkozok = (Eszkoz*)malloc(0 * sizeof(Eszkoz));
 	//init_string(&sEgyLog);
 	init_string(&xEgyLog);
 
@@ -884,7 +886,7 @@ void OfflineMod()
 			{
 				printf("FILE: '%s'\n", ent->d_name);
 				
-				olvasandofile = realloc(olvasandofile, 9 + ent->d_namlen);
+				olvasandofile = (char*)realloc(olvasandofile, 9 + ent->d_namlen);
 				strcpy_s(olvasandofile, 9, "offline\\");
 				strcat_s(olvasandofile, 9 + ent->d_namlen, ent->d_name);
 
@@ -895,8 +897,8 @@ void OfflineMod()
 
 				if (fsize > fsizeelozo)
 				{
-					fajltart = realloc(fajltart, fsize + 1);
-					xEgyLog.ptr = realloc(xEgyLog.ptr, fsize * sizeof(char));//Ez biztosan nagyobb, vagy akkora, mint a dekódolás utáni karakterlánc
+					fajltart = (char*)realloc(fajltart, fsize + 1);
+					xEgyLog.ptr = (char*)realloc(xEgyLog.ptr, fsize * sizeof(char));//Ez biztosan nagyobb, vagy akkora, mint a dekódolás utáni karakterlánc
 				}
 				fsizeelozo = fsize;
 
@@ -938,7 +940,7 @@ void OfflineMod()
 
 		printf("\nFile handling error... Directory cannot be opened!\n");
 
-		return EXIT_FAILURE;
+		//return EXIT_FAILURE;
 	}
 
 }
