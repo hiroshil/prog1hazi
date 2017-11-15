@@ -1,0 +1,1 @@
+start cmd /k "D:\Users\gatsj\Documents\Visual Studio 2015\Projects\Prog1Hazi\Debug\Prog1HaziKliens.exe"
