@@ -1,5 +1,6 @@
 /*
-!!!!MINDIG x86-ra buildelj! A MySQl connector nem mûködik 64 biten.!!!!
+!!!! MINDIG x86-ra buildelj! A MySQl connector nem mûködik 64 biten. !!!!
+>> MSBuild Toolset v140-nél kisebb verziója alatt nem feltétlen fordul le. <<
 */
 
 
@@ -10,19 +11,22 @@
 #include <time.h>
 #include <float.h>
 #include <math.h>
+#include <time.h>
 #include "3rdparty\dirent.h"
 #include "3rdparty\mysql-connector-c-6.1.11-win32\include\mysql.h"
 #include "3rdparty\curl-7.56.0\builds\libcurl-vc-x86-release-dll-ipv6-sspi-winssl\include\curl\curl.h"
+
 char IsNaN(float f)
 {
 	return !(f >= -FLT_MAX);
 }
 
-void delay(unsigned int mseconds)
-{
-	clock_t goal = mseconds + clock();
-	while (goal > clock());
-}
+//void delay(unsigned int mseconds)
+//{
+//	clock_t goal = mseconds + clock();
+//	while (goal > clock());
+//}
+
 static unsigned int to_latin9(const unsigned int code)
 {
 	/* Code points 0 to U+00FF are the same in both. */
@@ -232,7 +236,7 @@ void EszkozTombNoveles(int proba)
 	//if (EszkozokSzama == 1) return;
 	// Make the array bigger
 	EszkozokBuffer = (Eszkoz*)realloc(Eszkozok, EszkozokSzama * sizeof(Eszkoz));
-	if (!EszkozokBuffer) { --EszkozokSzama; delay(10); EszkozTombNoveles(proba + 1); return; }
+	if (!EszkozokBuffer) { --EszkozokSzama; Sleep(10); EszkozTombNoveles(proba + 1); return; }
 
 	Eszkozok = EszkozokBuffer;
 
@@ -298,7 +302,7 @@ void StatisztikaKeszitesKiiras()
 {
 	float atlagMosogep = 0, atlagSzarito = 0, abszelterMosogep = 0, abszelterSzarito = 0;
 	int MosogepSzam = 0, SzaritoSzam = 0;
-	
+
 	int i;
 
 	qsort(Eszkozok, EszkozokSzama, sizeof(Eszkoz), CompareEszkozEmelet);
@@ -549,7 +553,8 @@ char StartsWith(struct string s, int startindex, char *teszt, int hossz)
 	return 1;
 }
 
-unsigned int logdelay = 5*60;//s
+unsigned int logdelay = 5 * 60;//s
+unsigned int offlinelogdelay = 5 * 60;//s
 char *szambuff1;//Mert az eltérõ emeletszám hosszok miatti sokszori memória allokálással bizonytalanul futott
 char *szambuff2;
 char *szambuff3;
@@ -688,7 +693,7 @@ void EnumString(struct string s, char OnlineMode /*0: Offline, Más: Online*/)
 				l.Emelet = Emelet;
 				l.Hossz = logdelay;
 
-				delay(30);
+				Sleep(30);
 
 				printf("  ==>Creating row: Type: %d  Floor: %d  Status: %d  Duration: %ds   -> ", l.Tipus, l.Emelet, l.Statusz, l.Hossz);
 				if (SqlInsert(l) == 0)
@@ -710,11 +715,11 @@ void EnumString(struct string s, char OnlineMode /*0: Offline, Más: Online*/)
 				}
 
 				if (l.Statusz == 0)//Inaktív
-					Eszkozok[x].OsszPihenes += 5 * 60;
+					Eszkozok[x].OsszPihenes += offlinelogdelay;
 				else if (l.Statusz == 1)//Aktív
-					Eszkozok[x].OsszMukodes += 5 * 60;
+					Eszkozok[x].OsszMukodes += offlinelogdelay;
 				else //N/A
-					Eszkozok[x].OsszNincsadat += 5 * 60;
+					Eszkozok[x].OsszNincsadat += offlinelogdelay;
 
 
 				printf_s("  ==>Gathered data: Type: %d  Floor: %d  Status: %d\n", l.Tipus, Emelet, l.Statusz);
@@ -820,7 +825,7 @@ void Logolas()
 		free(sEgyLog.ptr);
 		//xEgyLog.len = 0;
 		//free(xEgyLog.ptr);
-		delay((unsigned int)(logdelay * 1000));
+		Sleep((unsigned int)(logdelay * 1000));
 		printf("Done.\n");
 		init_string(&sEgyLog);
 	}
@@ -893,12 +898,12 @@ void OfflineMod()
 			if (strend(ent->d_name, ".html"))
 			{
 				printf("FILE: '%s'\n", ent->d_name);
-				
+
 				olvasandofile = (char*)realloc(olvasandofile, 9 + ent->d_namlen);
 				strcpy_s(olvasandofile, 9, "offline\\");
 				strcat_s(olvasandofile, 9 + ent->d_namlen, ent->d_name);
 
-				fopen_s(&f,olvasandofile, "rb");
+				fopen_s(&f, olvasandofile, "rb");
 				fseek(f, 0, SEEK_END);
 				fsize = ftell(f) + 1;
 				fseek(f, 0, SEEK_SET);  //same as rewind(f);
@@ -910,7 +915,7 @@ void OfflineMod()
 				}
 				fsizeelozo = fsize;
 
-				delay(10);
+				Sleep(10);
 
 				fread(fajltart, fsize, 1, f);
 				fclose(f);
@@ -935,7 +940,14 @@ void OfflineMod()
 		closedir(dir);
 		free(olvasandofile);
 		free(fajltart);
-		
+
+		free(szambuff1);
+		free(szambuff2);
+		free(szambuff3);
+		free(szambuff4);
+		free(szambuff5);
+		free(szambuff6);
+
 		//printf("XXXXXXX\n");
 		StatisztikaKeszitesKiiras();
 		//printf("YYYYY\n");
@@ -952,17 +964,129 @@ void OfflineMod()
 	}
 
 }
-int main()
+void EgyetBeallitInt(char *nev, int *valtozo)
+{
+	int be = 0;
+
+	printf("Set %s: ", nev);
+	scanf_s("%d", &be);
+
+	*valtozo = be;
+	system("cls");
+	printf(">>%s has been set to %d sec.\n\n", nev, *valtozo);
+}
+void Beallitasok()
+{
+	int be = 0;
+
+
+	printf("SETTINGS:\n\n");
+	printf("1: Logging interval (%d sec)\n", logdelay);
+	printf("2: Statistical interval of offline files (%d sec)\n", offlinelogdelay);
+	printf("Other: Back\n");
+
+	scanf_s("%d", &be);
+
+
+	printf("\n\n");
+	switch (be)
+	{
+		case 1:
+		{
+			/*printf("Set logging interval (sec): ");
+			scanf_s("%d", &be);
+
+			logdelay = be;
+			system("cls");
+			printf(">>Logging interval has been set to %d sec.\n\n", logdelay);*/
+
+			EgyetBeallitInt("Logging interval", &logdelay);
+			Beallitasok();
+			break;
+		}
+		case 2:
+		{
+			/*printf("Set offline logging interval (sec): ");
+			scanf_s("%d", &be);
+
+			offlinelogdelay = be;
+			system("cls");
+			printf(">>Offline logging interval has been set to %d sec.\n\n", offlinelogdelay);*/
+
+			EgyetBeallitInt("Offline logging interval", &offlinelogdelay);
+			Beallitasok();
+			break;
+		}
+	}
+}
+int DisplayMainMenu()
 {
 	int mod = 0;
 
-	printf("Select mode:\n\n"); 
+	printf("Select mode:\n\n");
+	printf("0: Settings.\n\n");
 	printf("1: Online Logging - Get HTTP Request from mosogep.sch.bme.hu/index.php and log into online database until the terminal is closed.\n\n");
 	printf("2: Online Supervision - Calculate supervision data from online database.\n\n");
-	printf("3: Offline Analytics - read '.\\offline\\*.html' files to create a local log. Every file is logged as 5min duration. After creating the log, the software shows the calculated supervision data immediately.\n\n");
+	printf("3: Offline Analytics - read '.\\offline\\*.html' files to create a local log. Every file is logged as %d sec duration. After creating the log, the software shows the calculated supervision data immediately.\n\n", offlinelogdelay);
 	printf("Other: Exit\n");
-	
+
 	scanf_s("%d", &mod);
+
+	return mod;
+}
+int LoadSettings()
+{
+	int hiba = 0;
+
+	FILE *f;
+	if (fopen_s(&f, "prefs.sv", "r") != 0)
+		return 1;
+
+	if (fread(&logdelay, sizeof(unsigned int), 1, f) != 1)
+		hiba = 1;
+	if (fread(&offlinelogdelay, sizeof(unsigned int), 1, f) != 1)
+		hiba = 1;
+
+	fclose(f);
+
+	return hiba;
+}
+int SaveSettings()
+{
+	FILE *f;
+	if (fopen_s(&f, "prefs.sv", "w") != 0)
+		return 1;
+
+	if (fwrite(&logdelay, sizeof(unsigned int), 1, f) != 1)
+		return 1;
+	if (fwrite(&offlinelogdelay, sizeof(unsigned int), 1, f) != 1)
+		return 1;
+
+	return fclose(f);
+}
+int main()
+{
+	int mod;
+
+	if (LoadSettings() != 0)
+	{
+		printf("Warning: Settings couldn't be loaded properly.\n\n");
+	}
+
+	mod = DisplayMainMenu();
+
+	if (mod == 0)
+	{
+		system("cls");
+		Beallitasok();
+		system("cls");
+		if (SaveSettings() != 0)
+		{
+			printf("Error: Settings couldn't be saved.\n\n");
+		}
+		main();
+		return;
+	}
 
 	if (mod == 1 || mod == 2)
 	{
