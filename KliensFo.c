@@ -873,6 +873,14 @@ void OfflineMod()
 	printf("MODE: Offline Analytics\n");
 	printf("\nCreating logs from '.\\offline\\*.html' files:\n\n");
 
+
+	szambuff1 = (char*)malloc(1 * sizeof(char));
+	szambuff2 = (char*)malloc(2 * sizeof(char));
+	szambuff3 = (char*)malloc(3 * sizeof(char));
+	szambuff4 = (char*)malloc(4 * sizeof(char));
+	szambuff5 = (char*)malloc(5 * sizeof(char));
+	szambuff6 = (char*)malloc(6 * sizeof(char));
+
 	Eszkozok = (Eszkoz*)malloc(0 * sizeof(Eszkoz));
 	//init_string(&sEgyLog);
 	init_string(&xEgyLog);
