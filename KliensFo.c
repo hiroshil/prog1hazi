@@ -1,6 +1,6 @@
 /*
-!!!! MINDIG x86-ra buildelj! A MySQl connector nem mûködik 64 biten. !!!!
->> MSBuild Toolset v140-nél kisebb verziója alatt nem feltétlen fordul le. <<
+!!!! MINDIG Release/x86-ra buildelj! A MySqlConnector/cURL nem mûködik Deubug buildben/64 biten. !!!!
+>> MSBuild Toolset v120 alatt is fordul, de csak Static Library-kkel. <<
 */
 
 
@@ -15,6 +15,10 @@
 #include "3rdparty\dirent.h"
 #include "3rdparty\mysql-connector-c-6.1.11-win32\include\mysql.h"
 //#include "3rdparty\curl-7.56.0\builds\libcurl-vc-x86-release-dll-ipv6-sspi-winssl\include\curl\curl.h"
+//#include <curl\curl.h>
+//#include "3rdparty\curl-7.56.1\builds\libcurl-vc12-x86-release-static-ipv6-sspi-winssl\include\curl\curl.h"
+//#include "stdafx.h"
+
 #include <curl\curl.h>
 
 char IsNaN(float f)
