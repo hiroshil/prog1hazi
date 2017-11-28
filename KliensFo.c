@@ -14,7 +14,8 @@
 #include <time.h>
 #include "3rdparty\dirent.h"
 #include "3rdparty\mysql-connector-c-6.1.11-win32\include\mysql.h"
-#include "3rdparty\curl-7.56.0\builds\libcurl-vc-x86-release-dll-ipv6-sspi-winssl\include\curl\curl.h"
+//#include "3rdparty\curl-7.56.0\builds\libcurl-vc-x86-release-dll-ipv6-sspi-winssl\include\curl\curl.h"
+#include <curl\curl.h>
 
 char IsNaN(float f)
 {
@@ -964,7 +965,7 @@ void OfflineMod()
 	}
 
 }
-void EgyetBeallitInt(char *nev, int *valtozo)
+void EgyetBeallitInt(char *nev, unsigned int *valtozo)
 {
 	int be = 0;
 
